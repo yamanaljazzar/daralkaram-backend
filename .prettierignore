@@ -1,0 +1,41 @@
+# Build outputs
+build/*
+dist/*
+public/*
+**/out/*
+**/.next/*
+
+# Dependencies
+**/node_modules/*
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+*.d.ts
+*.js.map
+*.d.ts.map
+
+# Database
+prisma/migrations/*
+
+# Coverage reports
+coverage/*
+.nyc_output/*
+
+# Logs
+*.log
+logs/*
+
+# Environment files
+.env*
+
+# IDE files
+.vscode/*
+.idea/*
+
+# OS files
+.DS_Store
+Thumbs.db
