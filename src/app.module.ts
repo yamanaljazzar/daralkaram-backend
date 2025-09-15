@@ -14,6 +14,9 @@ import { DemoModule } from './modules/demo/demo.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LoggingInterceptor } from './core/interceptors';
 import { UsersModule } from './modules/users/users.module';
+import { ClassesModule } from './modules/classes/classes.module';
+import { AcademicYearsModule } from './modules/academic-years/academic-years.module';
+import { ClassTemplatesModule } from './modules/class-templates/class-templates.module';
 
 @Module({
   controllers: [AppController],
@@ -42,6 +45,9 @@ import { UsersModule } from './modules/users/users.module';
     // Feature Modules
     AuthModule,
     UsersModule,
+    AcademicYearsModule,
+    ClassTemplatesModule,
+    ClassesModule,
     DemoModule,
   ],
   providers: [

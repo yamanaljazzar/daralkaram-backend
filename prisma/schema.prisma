@@ -27,6 +27,7 @@ model User {
 
   // Relations
   refreshTokens RefreshToken[]
+  taughtClasses Class[]        @relation("TeacherClasses")
 
   @@map("users")
 }
@@ -43,6 +44,54 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+// Academic Year model
+model AcademicYear {
+  id        String   @id @default(cuid())
+  name      String   @unique // e.g., "2025-2026"
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true) // To mark the current/active year
+  createdAt DateTime @default(now())
+
+  classes Class[]
+
+  @@map("academic_years")
+}
+
+// Class Template model
+model ClassTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true) // For soft-deletion
+  createdAt DateTime @default(now())
+
+  classes Class[]
+
+  @@map("class_templates")
+}
+
+// Class model
+model Class {
+  id          String   @id @default(cuid())
+  level       String
+  maxCapacity Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  templateId String
+  template   ClassTemplate @relation(fields: [templateId], references: [id])
+
+  teacherId String?
+  teacher   User?   @relation("TeacherClasses", fields: [teacherId], references: [id])
+
+  @@unique([academicYearId, templateId], name: "unique_class_in_year")
+  @@map("classes")
 }
 
 // Enums
