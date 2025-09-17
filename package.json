@@ -127,7 +127,7 @@
       }
     },
     "testEnvironment": "node",
-    "moduleNameMapping": {
+    "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
       "^@/common/(.*)$": "<rootDir>/common/$1",
       "^@/config/(.*)$": "<rootDir>/config/$1",

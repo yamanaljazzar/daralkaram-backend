@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { Test, type TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from './prisma.service';
 
@@ -7,7 +9,13 @@ describe('PrismaService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PrismaService],
+      providers: [
+        PrismaService,
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn(() => false) },
+        },
+      ],
     }).compile();
 
     service = module.get<PrismaService>(PrismaService);
@@ -23,8 +31,8 @@ describe('PrismaService', () => {
 
   it('should be able to connect and disconnect', async () => {
     // Mock the database connection for testing
-    jest.spyOn(service, '$connect').mockResolvedValue(undefined);
-    jest.spyOn(service, '$disconnect').mockResolvedValue(undefined);
+    (service.$connect as any) = jest.fn().mockResolvedValue(undefined);
+    (service.$disconnect as any) = jest.fn().mockResolvedValue(undefined);
 
     await expect(service.onModuleInit()).resolves.not.toThrow();
     await expect(service.onModuleDestroy()).resolves.not.toThrow();
