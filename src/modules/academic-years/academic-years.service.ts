@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 
@@ -109,6 +110,25 @@ export class AcademicYearsService {
     });
 
     return this.mapToResponse(updatedAcademicYear);
+  }
+
+  async remove(id: string): Promise<void> {
+    const academicYear = await this.findOne(id);
+
+    const connectedClasses = await this.prisma.class.findMany({
+      select: { id: true, level: true },
+      where: { academicYearId: id },
+    });
+
+    if (connectedClasses.length > 0) {
+      throw new ForbiddenException(
+        `Cannot delete academic year "${academicYear.name}" because it has ${connectedClasses.length} connected class(es). Please remove or reassign the classes first.`,
+      );
+    }
+
+    await this.prisma.academicYear.delete({
+      where: { id },
+    });
   }
 
   private mapToResponse(academicYear: {

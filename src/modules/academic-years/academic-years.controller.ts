@@ -5,6 +5,7 @@ import {
   Patch,
   Param,
   Query,
+  Delete,
   HttpCode,
   UseGuards,
   Controller,
@@ -65,5 +66,12 @@ export class AcademicYearsController {
   ): Promise<ApiResponse<AcademicYearResponseDto>> {
     const result = await this.academicYearsService.update(id, updateAcademicYearDto);
     return this.responseService.success(result);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id')
+  async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
+    await this.academicYearsService.remove(id);
+    return this.responseService.noContent();
   }
 }

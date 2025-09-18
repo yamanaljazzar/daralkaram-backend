@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsString, IsBoolean, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
+import { IsDate, IsString, IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateAcademicYearDto {
   @IsNotEmpty({ message: 'Academic year name is required' })
@@ -7,30 +7,33 @@ export class CreateAcademicYearDto {
   name: string;
 
   @IsNotEmpty({ message: 'Start date is required' })
-  @IsDateString({}, { message: 'Start date must be a valid date' })
+  @IsDate()
   @Type(() => Date)
-  startDate: Date;
+  startDate: string;
 
   @IsNotEmpty({ message: 'End date is required' })
-  @IsDateString({}, { message: 'End date must be a valid date' })
+  @IsDate()
   @Type(() => Date)
-  endDate: Date;
+  endDate: string;
 }
 
 export class UpdateAcademicYearDto {
   @IsOptional()
+  @IsNotEmpty({ message: 'Academic year name should not be empty' })
   @IsString({ message: 'Academic year name must be a string' })
   name?: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'Start date must be a valid date' })
+  @IsNotEmpty({ message: 'Start date should not be empty' })
+  @IsDate()
   @Type(() => Date)
-  startDate?: Date;
+  startDate?: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'End date must be a valid date' })
+  @IsNotEmpty({ message: 'End date should not be empty' })
+  @IsDate()
   @Type(() => Date)
-  endDate?: Date;
+  endDate?: string;
 
   @IsOptional()
   @IsBoolean({ message: 'isActive must be a boolean' })
