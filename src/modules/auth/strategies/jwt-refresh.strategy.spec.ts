@@ -1,7 +1,7 @@
+import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
 // @ts-nocheck
 import { Test, type TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '@/database';
 
@@ -60,9 +60,9 @@ describe('JwtRefreshStrategy', () => {
       user: { id: 'u1', isActive: true },
     });
 
-    await expect(
-      strategy.validate({ sub: 'u1', tokenId: 'rt_2' } as any),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(strategy.validate({ sub: 'u1', tokenId: 'rt_2' } as any)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('should throw when user is inactive', async () => {
@@ -73,9 +73,8 @@ describe('JwtRefreshStrategy', () => {
       user: { id: 'u1', isActive: false },
     });
 
-    await expect(
-      strategy.validate({ sub: 'u1', tokenId: 'rt_3' } as any),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(strategy.validate({ sub: 'u1', tokenId: 'rt_3' } as any)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });
-

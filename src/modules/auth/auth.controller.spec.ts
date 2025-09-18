@@ -1,11 +1,11 @@
+import { HttpStatus } from '@nestjs/common';
 // @ts-nocheck
 import { Test, type TestingModule } from '@nestjs/testing';
-import { HttpStatus } from '@nestjs/common';
 
 import { ResponseService } from '@/core/services';
 
-import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -34,7 +34,11 @@ describe('AuthController', () => {
   });
 
   it('should return success response for login', async () => {
-    (mockAuthService.login as jest.Mock).mockResolvedValue({ accessToken: 'a', refreshToken: 'r', user: { id: '1' } });
+    (mockAuthService.login as jest.Mock).mockResolvedValue({
+      accessToken: 'a',
+      refreshToken: 'r',
+      user: { id: '1' },
+    });
     const result = await controller.login({ email: 'e@e.com', password: 'P@ssw0rd' });
     expect(result.success).toBe(true);
     expect(result.statusCode).toBe(HttpStatus.OK);
@@ -42,7 +46,10 @@ describe('AuthController', () => {
   });
 
   it('should return success response for refresh', async () => {
-    (mockAuthService.refreshToken as jest.Mock).mockResolvedValue({ accessToken: 'na', refreshToken: 'nr' });
+    (mockAuthService.refreshToken as jest.Mock).mockResolvedValue({
+      accessToken: 'na',
+      refreshToken: 'nr',
+    });
     const result = await controller.refreshToken({ refreshToken: 'old' });
     expect(result.success).toBe(true);
     expect(result.statusCode).toBe(HttpStatus.OK);
@@ -65,4 +72,3 @@ describe('AuthController', () => {
     expect(result.data).toBeNull();
   });
 });
-

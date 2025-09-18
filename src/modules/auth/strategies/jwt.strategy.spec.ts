@@ -1,7 +1,7 @@
+import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
 // @ts-nocheck
 import { Test, type TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '@/database';
 
@@ -54,4 +54,3 @@ describe('JwtStrategy', () => {
     );
   });
 });
-

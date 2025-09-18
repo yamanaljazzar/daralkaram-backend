@@ -1,13 +1,12 @@
-// @ts-nocheck
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
 }));
 import * as bcrypt from 'bcryptjs';
 
-import { Test, type TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { UserRole } from '@prisma/client';
 
@@ -73,7 +72,9 @@ describe('AuthService', () => {
     });
 
     (mockJwtService.sign as jest.Mock).mockImplementation((payload: any) =>
-      payload && typeof payload === 'object' && 'tokenId' in payload ? 'refresh.token' : 'access.token',
+      payload && typeof payload === 'object' && 'tokenId' in payload
+        ? 'refresh.token'
+        : 'access.token',
     );
 
     (prismaMock.refreshToken.create as jest.Mock).mockResolvedValue({
@@ -131,6 +132,7 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBe('refresh.token');
       expect(result.user).toMatchObject({ id: 'user_1', email: 'user@example.com' });
       expect(bcrypt.compare).toHaveBeenCalledWith('Passw0rd!', 'hashed');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockLoggerService.logAuth).toHaveBeenCalled();
     });
 
@@ -202,11 +204,15 @@ describe('AuthService', () => {
       const result = await service.refreshToken('old.refresh');
       expect(result.accessToken).toBe('access.token');
       expect(result.refreshToken).toBe('refresh.token');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockLoggerService.logAuth).toHaveBeenCalled();
     });
 
     it('should throw if refresh token not found', async () => {
-      (mockJwtService.verify as jest.Mock).mockReturnValue({ sub: 'user_1', tokenId: 'rt_missing' });
+      (mockJwtService.verify as jest.Mock).mockReturnValue({
+        sub: 'user_1',
+        tokenId: 'rt_missing',
+      });
       (prismaMock.refreshToken.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.refreshToken('invalid')).rejects.toBeInstanceOf(UnauthorizedException);
@@ -252,6 +258,7 @@ describe('AuthService', () => {
       });
 
       await expect(service.logout('bad.refresh')).resolves.toBeUndefined();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockLoggerService.warn).toHaveBeenCalled();
     });
   });
@@ -261,8 +268,9 @@ describe('AuthService', () => {
       (prismaMock.refreshToken.deleteMany as jest.Mock).mockResolvedValue({ count: 2 });
 
       await expect(service.logoutAll('user_10')).resolves.toBeUndefined();
-      expect(prismaMock.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user_10' } });
+      expect(prismaMock.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user_10' },
+      });
     });
   });
 });
-

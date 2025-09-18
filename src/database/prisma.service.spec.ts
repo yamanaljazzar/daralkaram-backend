@@ -1,6 +1,6 @@
+import { ConfigService } from '@nestjs/config';
 // @ts-nocheck
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from './prisma.service';
 
