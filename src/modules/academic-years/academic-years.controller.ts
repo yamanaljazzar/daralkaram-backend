@@ -10,8 +10,6 @@ import {
   UseGuards,
   Controller,
   HttpStatus,
-  ParseBoolPipe,
-  DefaultValuePipe,
 } from '@nestjs/common';
 
 import { UserRole } from '@prisma/client';
@@ -21,7 +19,12 @@ import { JwtAuthGuard } from '@/modules/auth/guards';
 import { ApiResponse, ResponseService } from '@/core/services';
 
 import { AcademicYearsService } from './academic-years.service';
-import { CreateAcademicYearDto, UpdateAcademicYearDto, AcademicYearResponseDto } from './dto';
+import {
+  CreateAcademicYearDto,
+  UpdateAcademicYearDto,
+  AcademicYearResponseDto,
+  FindAcademicYearsQueryDto,
+} from './dto';
 
 @Controller('academic-years')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,9 +48,9 @@ export class AcademicYearsController {
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(
-    @Query('active', new DefaultValuePipe(false), ParseBoolPipe) active: boolean,
+    @Query() query: FindAcademicYearsQueryDto,
   ): Promise<ApiResponse<AcademicYearResponseDto[]>> {
-    const result = await this.academicYearsService.findAll(active);
+    const result = await this.academicYearsService.findAll(query.active);
     return this.responseService.success(result);
   }
 

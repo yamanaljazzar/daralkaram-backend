@@ -5,50 +5,41 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
-import { UserRole } from '@prisma/client';
+import { Level, UserRole } from '@prisma/client';
 
 import { PrismaService } from '@/database';
+import { UsersService } from '@/modules/users/users.service';
+import { AcademicYearsService } from '@/modules/academic-years/academic-years.service';
+import { ClassTemplatesService } from '@/modules/class-templates/class-templates.service';
 
 import { CreateClassDto, UpdateClassDto, ClassResponseDto } from './dto';
 
 @Injectable()
 export class ClassesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+    private readonly academicYearsService: AcademicYearsService,
+    private readonly classTemplatesService: ClassTemplatesService,
+  ) {}
 
   async create(createClassDto: CreateClassDto): Promise<ClassResponseDto> {
     const { academicYearId, level, maxCapacity, teacherId, templateId } = createClassDto;
 
-    // Verify academic year exists
-    const academicYear = await this.prisma.academicYear.findUnique({
-      where: { id: academicYearId },
-    });
+    const academicYear = await this.academicYearsService.findOne(academicYearId);
 
-    if (!academicYear) {
-      throw new NotFoundException('Academic year not found');
+    if (!academicYear.isActive) {
+      throw new BadRequestException('Cannot create class with inactive academic year');
     }
 
-    // Verify class template exists and is active
-    const classTemplate = await this.prisma.classTemplate.findUnique({
-      where: { id: templateId },
-    });
-
-    if (!classTemplate) {
-      throw new NotFoundException('Class template not found');
-    }
+    const classTemplate = await this.classTemplatesService.findOne(templateId);
 
     if (!classTemplate.isActive) {
       throw new BadRequestException('Cannot create class with inactive template');
     }
 
-    // Verify teacher exists and has TEACHER role (if provided)
     if (teacherId) {
-      const teacher = await this.prisma.user.findUnique({
-        where: { id: teacherId },
-      });
-
-      if (!teacher) {
-        throw new NotFoundException('Teacher not found');
-      }
+      const teacher = await this.usersService.findOne(teacherId);
 
       if (teacher.role !== UserRole.TEACHER) {
         throw new BadRequestException('Assigned user must have TEACHER role');
@@ -59,7 +50,6 @@ export class ClassesService {
       }
     }
 
-    // Check if combination of academic year and template already exists
     const existingClass = await this.prisma.class.findUnique({
       where: {
         unique_class_in_year: {
@@ -91,20 +81,33 @@ export class ClassesService {
     return this.mapToResponse(classEntity);
   }
 
-  async findAll(academicYearId?: string): Promise<ClassResponseDto[]> {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    academicYearId?: string,
+  ): Promise<{ data: ClassResponseDto[]; total: number }> {
     const where = academicYearId ? { academicYearId } : {};
+    const skip = (page - 1) * limit;
 
-    const classes = await this.prisma.class.findMany({
-      include: {
-        academicYear: true,
-        teacher: true,
-        template: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      where,
-    });
+    const [classes, total] = await Promise.all([
+      this.prisma.class.findMany({
+        include: {
+          academicYear: true,
+          teacher: true,
+          template: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        where,
+      }),
+      this.prisma.class.count({ where }),
+    ]);
 
-    return classes.map(classEntity => this.mapToResponse(classEntity));
+    return {
+      data: classes.map(classEntity => this.mapToResponse(classEntity)),
+      total,
+    };
   }
 
   async findOne(id: string): Promise<ClassResponseDto> {
@@ -125,17 +128,26 @@ export class ClassesService {
   }
 
   async update(id: string, updateClassDto: UpdateClassDto): Promise<ClassResponseDto> {
-    await this.findOne(id);
+    const existingClass = await this.findOne(id);
 
-    // Verify teacher exists and has TEACHER role (if being updated)
-    if (updateClassDto.teacherId) {
-      const teacher = await this.prisma.user.findUnique({
-        where: { id: updateClassDto.teacherId },
-      });
+    if (updateClassDto.academicYearId) {
+      const academicYear = await this.academicYearsService.findOne(updateClassDto.academicYearId);
 
-      if (!teacher) {
-        throw new NotFoundException('Teacher not found');
+      if (!academicYear.isActive) {
+        throw new BadRequestException('Cannot assign class to inactive academic year');
       }
+    }
+
+    if (updateClassDto.templateId) {
+      const template = await this.classTemplatesService.findOne(updateClassDto.templateId);
+
+      if (!template.isActive) {
+        throw new BadRequestException('Cannot assign class to inactive template');
+      }
+    }
+
+    if (updateClassDto.teacherId) {
+      const teacher = await this.usersService.findOne(updateClassDto.teacherId);
 
       if (teacher.role !== UserRole.TEACHER) {
         throw new BadRequestException('Assigned user must have TEACHER role');
@@ -143,6 +155,25 @@ export class ClassesService {
 
       if (!teacher.isActive) {
         throw new BadRequestException('Cannot assign inactive teacher');
+      }
+    }
+
+    if (updateClassDto.academicYearId || updateClassDto.templateId) {
+      const academicYearId = updateClassDto.academicYearId || existingClass.academicYearId;
+      const templateId = updateClassDto.templateId || existingClass.templateId;
+
+      const existingClassWithSameYearAndTemplate = await this.prisma.class.findFirst({
+        where: {
+          academicYearId,
+          id: { not: id },
+          templateId,
+        },
+      });
+
+      if (existingClassWithSameYearAndTemplate) {
+        throw new ConflictException(
+          'A class with this template already exists in the specified academic year',
+        );
       }
     }
 
@@ -187,7 +218,7 @@ export class ClassesService {
 
   private mapToResponse(classEntity: {
     id: string;
-    level: string;
+    level: Level;
     maxCapacity: number | null;
     createdAt: Date;
     updatedAt: Date;

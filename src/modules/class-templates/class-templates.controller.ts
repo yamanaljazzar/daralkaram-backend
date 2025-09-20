@@ -10,8 +10,6 @@ import {
   UseGuards,
   Controller,
   HttpStatus,
-  ParseBoolPipe,
-  DefaultValuePipe,
 } from '@nestjs/common';
 
 import { UserRole } from '@prisma/client';
@@ -21,7 +19,12 @@ import { JwtAuthGuard } from '@/modules/auth/guards';
 import { ApiResponse, ResponseService } from '@/core/services';
 
 import { ClassTemplatesService } from './class-templates.service';
-import { CreateClassTemplateDto, UpdateClassTemplateDto, ClassTemplateResponseDto } from './dto';
+import {
+  CreateClassTemplateDto,
+  UpdateClassTemplateDto,
+  ClassTemplateResponseDto,
+  FindClassTemplatesQueryDto,
+} from './dto';
 
 @Controller('class-templates')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,9 +47,10 @@ export class ClassTemplatesController {
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(
-    @Query('includeArchived', new DefaultValuePipe(false), ParseBoolPipe) includeArchived: boolean,
+    @Query() query: FindClassTemplatesQueryDto,
   ): Promise<ApiResponse<ClassTemplateResponseDto[]>> {
-    const result = await this.classTemplatesService.findAll(includeArchived);
+    console.log(query.includeArchived, typeof query.includeArchived);
+    const result = await this.classTemplatesService.findAll(query.includeArchived);
     return this.responseService.success(result);
   }
 
@@ -70,8 +74,8 @@ export class ClassTemplatesController {
   @HttpCode(HttpStatus.OK)
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<ApiResponse<ClassTemplateResponseDto>> {
-    const result = await this.classTemplatesService.remove(id);
-    return this.responseService.success(result);
+    const { data, message } = await this.classTemplatesService.remove(id);
+    return this.responseService.success(data, message);
   }
 
   @HttpCode(HttpStatus.OK)

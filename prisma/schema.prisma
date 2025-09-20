@@ -75,7 +75,7 @@ model ClassTemplate {
 // Class model
 model Class {
   id          String   @id @default(cuid())
-  level       String
+  level       Level
   maxCapacity Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -100,4 +100,11 @@ enum UserRole {
   SUPERVISOR
   TEACHER
   GUARDIAN
+}
+
+enum Level {
+  KG1
+  KG2
+  KG3
+  FIRST_GRADE
 }

@@ -16,10 +16,10 @@ import { UserRole } from '@prisma/client';
 
 import { Roles, RolesGuard } from '@/core';
 import { JwtAuthGuard } from '@/modules/auth/guards';
-import { ApiResponse, ResponseService } from '@/core/services';
+import { ApiResponse, PaginatedData, ResponseService } from '@/core/services';
 
 import { ClassesService } from './classes.service';
-import { CreateClassDto, UpdateClassDto, ClassResponseDto } from './dto';
+import { CreateClassDto, UpdateClassDto, ClassResponseDto, FindClassesQueryDto } from './dto';
 
 @Controller('classes')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,10 +40,10 @@ export class ClassesController {
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(
-    @Query('academicYearId') academicYearId?: string,
-  ): Promise<ApiResponse<ClassResponseDto[]>> {
-    const result = await this.classesService.findAll(academicYearId);
-    return this.responseService.success(result);
+    @Query() query: FindClassesQueryDto,
+  ): Promise<ApiResponse<PaginatedData<ClassResponseDto>>> {
+    const result = await this.classesService.findAll(query.page, query.limit, query.academicYearId);
+    return this.responseService.paginated(result.data, result.total, query.page, query.limit);
   }
 
   @HttpCode(HttpStatus.OK)

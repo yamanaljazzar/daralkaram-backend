@@ -73,16 +73,40 @@ export class ClassTemplatesService {
     return this.mapToResponse(updatedClassTemplate);
   }
 
-  async remove(id: string): Promise<ClassTemplateResponseDto> {
-    await this.findOne(id);
+  async remove(id: string): Promise<{
+    data: ClassTemplateResponseDto;
+    message: string;
+    action: 'deleted' | 'deactivated';
+  }> {
+    const classTemplate = await this.findOne(id);
 
-    // Soft delete by setting isActive to false
-    const deletedClassTemplate = await this.prisma.classTemplate.update({
-      data: { isActive: false },
-      where: { id },
+    const connectedClasses = await this.prisma.class.findMany({
+      select: { id: true, level: true },
+      where: { templateId: id },
     });
 
-    return this.mapToResponse(deletedClassTemplate);
+    if (connectedClasses.length > 0) {
+      const deactivatedTemplate = await this.prisma.classTemplate.update({
+        data: { isActive: false },
+        where: { id },
+      });
+
+      return {
+        action: 'deactivated',
+        data: this.mapToResponse(deactivatedTemplate),
+        message: `Class template ${classTemplate.name} has been deactivated because it has ${connectedClasses.length} connected class(es). To permanently delete it, please remove or reassign the classes first.`,
+      };
+    } else {
+      await this.prisma.classTemplate.delete({
+        where: { id },
+      });
+
+      return {
+        action: 'deleted',
+        data: this.mapToResponse(classTemplate),
+        message: `Class template ${classTemplate.name} has been permanently deleted.`,
+      };
+    }
   }
 
   async restore(id: string): Promise<ClassTemplateResponseDto> {

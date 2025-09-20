@@ -1,21 +1,21 @@
-import { Min, IsInt, IsUUID, IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { Min, IsInt, IsEnum, IsOptional, IsNotEmpty } from 'class-validator';
+
+import { Level } from '@prisma/client';
 
 export class CreateClassDto {
   @IsNotEmpty({ message: 'Academic year ID is required' })
-  @IsUUID('4', { message: 'Academic year ID must be a valid UUID' })
   academicYearId: string;
 
   @IsNotEmpty({ message: 'Template ID is required' })
-  @IsUUID('4', { message: 'Template ID must be a valid UUID' })
   templateId: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Teacher ID must be a valid UUID' })
+  @IsNotEmpty({ message: 'Teacher ID should not be empty' })
   teacherId?: string;
 
   @IsNotEmpty({ message: 'Level is required' })
-  @IsString({ message: 'Level must be a string' })
-  level: string;
+  @IsEnum(Level, { message: 'Level must be one of: KG1, KG2, KG3, FIRST_GRADE' })
+  level: Level;
 
   @IsOptional()
   @IsInt({ message: 'Max capacity must be a number' })
@@ -25,12 +25,20 @@ export class CreateClassDto {
 
 export class UpdateClassDto {
   @IsOptional()
-  @IsUUID('4', { message: 'Teacher ID must be a valid UUID' })
+  @IsNotEmpty({ message: 'Academic year ID should not be empty' })
+  academicYearId?: string;
+
+  @IsOptional()
+  @IsNotEmpty({ message: 'Template ID should not be empty' })
+  templateId?: string;
+
+  @IsOptional()
+  @IsNotEmpty({ message: 'Teacher ID should not be empty' })
   teacherId?: string;
 
   @IsOptional()
-  @IsString({ message: 'Level must be a string' })
-  level?: string;
+  @IsEnum(Level, { message: 'Level must be one of: KG1, KG2, KG3, FIRST_GRADE' })
+  level?: Level;
 
   @IsOptional()
   @IsInt({ message: 'Max capacity must be a number' })
@@ -40,7 +48,7 @@ export class UpdateClassDto {
 
 export class ClassResponseDto {
   id: string;
-  level: string;
+  level: Level;
   maxCapacity?: number;
   createdAt: Date;
   updatedAt: Date;
