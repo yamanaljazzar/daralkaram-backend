@@ -13,17 +13,6 @@ async function main() {
   // const guardianPassword = await bcrypt.hash('guardian123', 12);
 
   // Create sample users
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@daralkaram.com' },
-    update: {},
-    create: {
-      email: 'admin@daralkaram.com',
-      passwordHash: adminPassword,
-      role: UserRole.ADMIN,
-      isActive: true,
-      isVerified: true,
-    },
-  });
 
   // const supervisor = await prisma.user.upsert({
   //   where: { email: 'supervisor@daralkaram.com' },
@@ -61,6 +50,17 @@ async function main() {
   //   },
   // });
 
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@daralkaram.com' },
+    update: {},
+    create: {
+      email: 'admin@daralkaram.com',
+      passwordHash: adminPassword,
+      role: UserRole.ADMIN,
+      isActive: true,
+      isVerified: true,
+    },
+  });
   console.log('✅ Seed completed successfully!');
   console.log('Created users:');
   console.log('- Admin:', admin.email, '(password: 12341234)');
@@ -70,7 +70,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error('❌ Seed failed:', e);
     process.exit(1);
   })

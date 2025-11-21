@@ -13,6 +13,10 @@ import { UserRole } from '@prisma/client';
 
 export class CreateUserDto {
   @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
   @IsEmail({}, { message: 'Please provide a valid email address' })
   email?: string;
 
@@ -30,6 +34,10 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
   @IsOptional()
   @IsEmail({}, { message: 'Please provide a valid email address' })
   email?: string;
@@ -49,6 +57,7 @@ export class UpdateUserDto {
 
 export class UserResponseDto {
   id: string;
+  name?: string;
   email?: string;
   phone?: string;
   role: UserRole;

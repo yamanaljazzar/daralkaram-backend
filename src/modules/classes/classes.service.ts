@@ -5,9 +5,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
-import { Level, UserRole } from '@prisma/client';
+import { Level, UserRole, PrismaClient } from '@prisma/client';
 
 import { PrismaService } from '@/database';
+
+type PrismaTransactionClient = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 import { UsersService } from '@/modules/users/users.service';
 import { AcademicYearsService } from '@/modules/academic-years/academic-years.service';
 import { ClassTemplatesService } from '@/modules/class-templates/class-templates.service';
@@ -84,9 +86,40 @@ export class ClassesService {
   async findAll(
     page: number = 1,
     limit: number = 10,
-    academicYearId?: string,
+    filters?: {
+      level?: Level;
+      templateId?: string;
+      academicYearId?: string;
+      search?: string;
+    },
   ): Promise<{ data: ClassResponseDto[]; total: number }> {
-    const where = academicYearId ? { academicYearId } : {};
+    const where: {
+      level?: Level;
+      templateId?: string;
+      academicYearId?: string;
+      OR?: any;
+    } = {};
+
+    if (filters?.level) {
+      where.level = filters?.level;
+    }
+
+    if (filters?.templateId) {
+      where.templateId = filters.templateId;
+    }
+
+    if (filters?.academicYearId) {
+      where.academicYearId = filters.academicYearId;
+    }
+
+    if (filters?.search) {
+      where.OR = [
+        { template: { name: { contains: filters.search, mode: 'insensitive' } } },
+        { academicYear: { name: { contains: filters.search, mode: 'insensitive' } } },
+        { teacher: { name: { contains: filters.search, mode: 'insensitive' } } },
+      ];
+    }
+
     const skip = (page - 1) * limit;
 
     const [classes, total] = await Promise.all([
@@ -125,6 +158,27 @@ export class ClassesService {
     }
 
     return this.mapToResponse(classEntity);
+  }
+
+  async findByIdBasic(
+    id: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<{ id: string; maxCapacity: number | null; level: Level }> {
+    const prisma = (tx || this.prisma) as PrismaClient;
+    const classEntity = await prisma.class.findUnique({
+      select: {
+        id: true,
+        level: true,
+        maxCapacity: true,
+      },
+      where: { id },
+    });
+
+    if (!classEntity) {
+      throw new NotFoundException(`الفصل بالمعرف ${id} غير موجود`);
+    }
+
+    return classEntity;
   }
 
   async update(id: string, updateClassDto: UpdateClassDto): Promise<ClassResponseDto> {
@@ -193,16 +247,16 @@ export class ClassesService {
   async remove(id: string): Promise<ClassResponseDto> {
     await this.findOne(id);
 
-    // TODO: Check if class has students associated with it
-    // This will be implemented when the Student model is added
-    // For now, we'll allow deletion
-    // const studentCount = await this.prisma.student.count({
-    //   where: { classId: id },
-    // });
-    //
-    // if (studentCount > 0) {
-    //   throw new BadRequestException('Cannot delete class with associated students');
-    // }
+    // Check if class has enrolled students
+    const enrollmentCount = await this.prisma.enrollment.count({
+      where: { classId: id },
+    });
+
+    if (enrollmentCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete class with ${enrollmentCount} enrolled student(s). Please remove or transfer the students first.`,
+      );
+    }
 
     const deletedClass = await this.prisma.class.delete({
       include: {
@@ -239,6 +293,7 @@ export class ClassesService {
     };
     teacher: {
       id: string;
+      name: string | null;
       email: string | null;
       phone: string | null;
       role: UserRole;
@@ -263,6 +318,7 @@ export class ClassesService {
             email: classEntity.teacher.email || undefined,
             id: classEntity.teacher.id,
             isActive: classEntity.teacher.isActive,
+            name: classEntity.teacher.name || undefined,
             phone: classEntity.teacher.phone || undefined,
             role: classEntity.teacher.role,
           }

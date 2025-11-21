@@ -4,6 +4,7 @@ import {
   Post,
   Param,
   Patch,
+  Query,
   Delete,
   HttpCode,
   UseGuards,
@@ -16,10 +17,10 @@ import { UserRole } from '@prisma/client';
 import { Roles } from '@/core/decorators';
 import { RolesGuard } from '@/core/guards';
 import { JwtAuthGuard } from '@/modules/auth/guards';
-import { ApiResponse, ResponseService } from '@/core/services';
+import { ApiResponse, PaginatedData, ResponseService } from '@/core/services';
 
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto/user.dto';
+import { CreateUserDto, UpdateUserDto, UserResponseDto, FindUsersQueryDto } from './dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,9 +41,13 @@ export class UsersController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
-  async findAll(): Promise<ApiResponse<UserResponseDto[]>> {
-    const users = await this.usersService.findAll();
-    return this.responseService.success(users);
+  async findAll(
+    @Query() query: FindUsersQueryDto,
+  ): Promise<ApiResponse<PaginatedData<UserResponseDto>>> {
+    const { limit, page, role, search } = query;
+    const filters = { role, search };
+    const result = await this.usersService.findAll(page, limit, filters);
+    return this.responseService.paginated(result.data, result.total, page, limit);
   }
 
   @Get(':id')

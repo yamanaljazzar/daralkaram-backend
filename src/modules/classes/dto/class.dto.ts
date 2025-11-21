@@ -69,6 +69,7 @@ export class ClassResponseDto {
   };
   teacher?: {
     id: string;
+    name?: string;
     email?: string;
     phone?: string;
     role: string;

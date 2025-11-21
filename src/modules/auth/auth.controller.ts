@@ -1,11 +1,12 @@
 import { Throttle } from '@nestjs/throttler';
-import { Body, Post, HttpCode, UseGuards, Controller, HttpStatus } from '@nestjs/common';
+import { Get, Body, Post, HttpCode, UseGuards, Controller, HttpStatus } from '@nestjs/common';
 
 import { ResponseService } from '@/core/services';
 import { Public, CurrentUser } from '@/core/decorators';
 
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { UserResponseDto } from '../users/dto/user.dto';
 import { LoginDto, LogoutDto, RefreshTokenDto } from './dto/auth.dto';
 
 @Controller('auth')
@@ -14,6 +15,13 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly responseService: ResponseService,
   ) {}
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('me')
+  getCurrentUser(@CurrentUser() user: UserResponseDto) {
+    return this.responseService.success({ user });
+  }
 
   @Public()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -28,7 +36,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
-    //TODO: send the user back in the response
     const result = await this.authService.refreshToken(refreshTokenDto.refreshToken);
     return this.responseService.success(result, 'Token refreshed successfully');
   }

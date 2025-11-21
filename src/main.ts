@@ -13,7 +13,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const clientUrl = configService.get<string>('app.clientUrl');
   const port = configService.get<number>('app.port') || 3000;
-  const corsOrigins = configService.get<string[]>('cors.origin') || ['http://localhost:3000'];
+  // TODO: retrieve when the app is in production
+  // const corsOrigins = configService.get<string[]>('cors.origin') || ['http://localhost:3000'];
+  const corsOrigins = true;
   app.use(
     helmet({
       contentSecurityPolicy: {

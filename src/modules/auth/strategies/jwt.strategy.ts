@@ -11,6 +11,7 @@ import { PrismaService } from '@/database';
 
 export interface JwtPayload {
   sub: string;
+  name?: string;
   email?: string;
   phone?: string;
   role: UserRole;
@@ -51,6 +52,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         id: true,
         isActive: true,
         isVerified: true,
+        name: true,
         phone: true,
         role: true,
       },
@@ -66,6 +68,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user.id,
       isActive: user.isActive,
       isVerified: user.isVerified,
+      name: user.name,
       phone: user.phone,
       role: user.role,
     };

@@ -16,6 +16,7 @@ datasource db {
 // User model
 model User {
   id           String   @id @default(cuid())
+  name         String?
   email        String?  @unique
   phone        String?  @unique
   passwordHash String
@@ -28,6 +29,7 @@ model User {
   // Relations
   refreshTokens RefreshToken[]
   taughtClasses Class[]        @relation("TeacherClasses")
+  guardianInfo  Guardian?
 
   @@map("users")
 }
@@ -90,8 +92,94 @@ model Class {
   teacherId String?
   teacher   User?   @relation("TeacherClasses", fields: [teacherId], references: [id])
 
+  enrollments Enrollment[]
+
   @@unique([academicYearId, templateId], name: "unique_class_in_year")
   @@map("classes")
+}
+
+// Student model
+model Student {
+  id             String        @id @default(cuid())
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime
+  photoUrl       String?
+  enrollmentDate DateTime      @default(now())
+  status         StudentStatus @default(PENDING_APPROVAL)
+
+  // Detailed fields from the physical registration form
+  homeAddress             String?
+  homePhone               String?
+  grandfatherName         String?
+  siblingsCount           Int                  @default(0)
+  pickupPerson            String?
+  personalityTraits       Json?
+  fears                   Json?
+  favoriteColors          Json?
+  favoriteFoods           Json?
+  favoriteAnimals         Json?
+  forcedToEat             Boolean?
+  doctorName              String?
+  doctorPhone             String?
+  specialConditions       String?
+  emergencyContactAddress String?
+  emergencyContactName    String?
+  emergencyContactPhone   String?
+  parentsMaritalStatus    ParentMaritalStatus?
+
+  // Relations
+  enrollments Enrollment[]
+  guardians   StudentGuardianRelation[]
+
+  @@map("students")
+}
+
+// Guardian model
+model Guardian {
+  id             String                    @id @default(cuid())
+  name           String
+  phone          String                    @unique
+  dateOfBirth    DateTime?
+  educationLevel String?
+  occupation     String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  // Relations
+  students       StudentGuardianRelation[]
+  userId         String?                   @unique
+  user           User?                     @relation(fields: [userId], references: [id])
+
+  @@map("guardians")
+}
+
+model StudentGuardianRelation {
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+
+  guardianId String
+  guardian   Guardian @relation(fields: [guardianId], references: [id])
+
+  relationToChild String
+
+  @@id([studentId, guardianId])
+  @@map("student_guardian_relations")
+}
+
+// Enrollment model
+model Enrollment {
+  id                   String               @id @default(cuid())
+  enrollmentDate       DateTime             @default(now())
+  status               EnrollmentStatus     @default(PENDING)
+  registrationType     RegistrationType     @default(NORMAL)
+  transportationMethod TransportationMethod @default(WALK)
+  // Foreign Keys
+  studentId            String
+  student              Student              @relation(fields: [studentId], references: [id])
+  classId              String
+  class                Class                @relation(fields: [classId], references: [id])
+
+  @@map("enrollments")
 }
 
 // Enums
@@ -102,9 +190,40 @@ enum UserRole {
   GUARDIAN
 }
 
+enum StudentStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  GRADUATED
+  WITHDRAWN
+}
+
+enum RegistrationType {
+  NORMAL
+  TEMPORARY
+}
+
 enum Level {
   KG1
   KG2
   KG3
   FIRST_GRADE
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  WITHDRAWN
+}
+
+enum ParentMaritalStatus {
+  TOGETHER
+  SEPARATED
+  OTHERS
+}
+
+enum TransportationMethod {
+  BUS
+  WALK
 }

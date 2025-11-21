@@ -42,8 +42,10 @@ export class ClassesController {
   async findAll(
     @Query() query: FindClassesQueryDto,
   ): Promise<ApiResponse<PaginatedData<ClassResponseDto>>> {
-    const result = await this.classesService.findAll(query.page, query.limit, query.academicYearId);
-    return this.responseService.paginated(result.data, result.total, query.page, query.limit);
+    const { academicYearId, level, limit, page, search, templateId } = query;
+    const filters = { academicYearId, level, search, templateId };
+    const result = await this.classesService.findAll(page, limit, filters);
+    return this.responseService.paginated(result.data, result.total, page, limit);
   }
 
   @HttpCode(HttpStatus.OK)

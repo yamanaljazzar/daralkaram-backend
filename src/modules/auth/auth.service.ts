@@ -59,7 +59,7 @@ export class AuthService {
     };
   }
 
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     // Verify refresh token
     const payload = this.jwtService.verify<JwtRefreshPayload>(refreshToken, {
       secret: this.configService.get<string>('jwt.refreshSecret'),
@@ -93,7 +93,10 @@ export class AuthService {
       timestamp: new Date().toISOString(),
     });
 
-    return newTokens;
+    return {
+      ...newTokens,
+      user: this.usersService.mapUserToResponse(storedToken.user),
+    };
   }
 
   async logout(refreshToken: string): Promise<void> {

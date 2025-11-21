@@ -45,6 +45,7 @@ export class AuthResponseDto {
   refreshToken: string;
   user: {
     id: string;
+    name?: string;
     email?: string;
     phone?: string;
     role: UserRole;

@@ -15,6 +15,10 @@ export class CreateAcademicYearDto {
   @IsDate()
   @Type(() => Date)
   endDate: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'isActive must be a boolean' })
+  isActive?: boolean;
 }
 
 export class UpdateAcademicYearDto {

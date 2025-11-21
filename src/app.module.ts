@@ -15,6 +15,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LoggingInterceptor } from './core/interceptors';
 import { UsersModule } from './modules/users/users.module';
 import { ClassesModule } from './modules/classes/classes.module';
+import { StudentsModule } from './modules/students/students.module';
+import { GuardiansModule } from './modules/guardians/guardians.module';
+import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { AcademicYearsModule } from './modules/academic-years/academic-years.module';
 import { ClassTemplatesModule } from './modules/class-templates/class-templates.module';
 
@@ -48,6 +51,9 @@ import { ClassTemplatesModule } from './modules/class-templates/class-templates.
     AcademicYearsModule,
     ClassTemplatesModule,
     ClassesModule,
+    StudentsModule,
+    GuardiansModule,
+    EnrollmentsModule,
     DemoModule,
   ],
   providers: [

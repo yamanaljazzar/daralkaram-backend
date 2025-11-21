@@ -14,7 +14,7 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    const { email, password, phone, role } = createUserDto;
+    const { email, name, password, phone, role } = createUserDto;
 
     let normalizedPhone = phone;
     if (phone) {
@@ -32,6 +32,7 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         email,
+        name,
         passwordHash,
         phone: normalizedPhone,
         role,
@@ -41,12 +42,47 @@ export class UsersService {
     return this.mapUserToResponse(user);
   }
 
-  async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      role?: UserRole;
+      search?: string;
+    },
+  ): Promise<{ data: UserResponseDto[]; total: number }> {
+    const where: {
+      role?: UserRole;
+      OR?: any;
+    } = {};
 
-    return users.map(user => this.mapUserToResponse(user));
+    if (filters?.role) {
+      where.role = filters.role;
+    }
+
+    if (filters?.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { phone: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        where,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users.map(user => this.mapUserToResponse(user)),
+      total,
+    };
   }
 
   async findOne(id: string): Promise<UserResponseDto> {
@@ -143,6 +179,7 @@ export class UsersService {
 
   mapUserToResponse(user: {
     id: string;
+    name: string | null;
     email: string | null;
     phone: string | null;
     role: UserRole;
@@ -157,6 +194,7 @@ export class UsersService {
       id: user.id,
       isActive: user.isActive,
       isVerified: user.isVerified,
+      name: user.name || undefined,
       phone: user.phone || undefined,
       role: user.role,
       updatedAt: user.updatedAt,

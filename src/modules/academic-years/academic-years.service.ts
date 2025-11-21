@@ -15,7 +15,7 @@ export class AcademicYearsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createAcademicYearDto: CreateAcademicYearDto): Promise<AcademicYearResponseDto> {
-    const { endDate, name, startDate } = createAcademicYearDto;
+    const { endDate, isActive, name, startDate } = createAcademicYearDto;
 
     // Validate that end date is after start date
     if (new Date(endDate) <= new Date(startDate)) {
@@ -30,9 +30,58 @@ export class AcademicYearsService {
       throw new ConflictException('Academic year with this name already exists');
     }
 
+    // Check for date range overlaps with existing academic years
+    const overlappingYears = await this.prisma.academicYear.findMany({
+      where: {
+        OR: [
+          // New year starts during an existing year
+          {
+            AND: [
+              { startDate: { lte: new Date(startDate) } },
+              { endDate: { gte: new Date(startDate) } },
+            ],
+          },
+          // New year ends during an existing year
+          {
+            AND: [
+              { startDate: { lte: new Date(endDate) } },
+              { endDate: { gte: new Date(endDate) } },
+            ],
+          },
+          // New year completely contains an existing year
+          {
+            AND: [
+              { startDate: { gte: new Date(startDate) } },
+              { endDate: { lte: new Date(endDate) } },
+            ],
+          },
+        ],
+      },
+    });
+
+    if (overlappingYears.length > 0) {
+      throw new ConflictException(
+        `Date range conflicts with existing academic year(s): ${overlappingYears.map(y => y.name).join(', ')}`,
+      );
+    }
+
+    // Check if trying to create an active year when another one is already active
+    if (isActive) {
+      const activeYear = await this.prisma.academicYear.findFirst({
+        where: { isActive: true },
+      });
+
+      if (activeYear) {
+        throw new ConflictException(
+          `Cannot create active academic year. Academic year "${activeYear.name}" is already active. Please deactivate it first.`,
+        );
+      }
+    }
+
     const academicYear = await this.prisma.academicYear.create({
       data: {
         endDate: new Date(endDate),
+        isActive: isActive ?? false,
         name,
         startDate: new Date(startDate),
       },
@@ -70,19 +119,17 @@ export class AcademicYearsService {
   ): Promise<AcademicYearResponseDto> {
     const academicYear = await this.findOne(id);
 
-    // Validate dates if both are provided
-    if (updateAcademicYearDto.startDate && updateAcademicYearDto.endDate) {
-      if (new Date(updateAcademicYearDto.endDate) <= new Date(updateAcademicYearDto.startDate)) {
-        throw new BadRequestException('End date must be after start date');
-      }
-    } else if (updateAcademicYearDto.startDate && !updateAcademicYearDto.endDate) {
-      if (new Date(updateAcademicYearDto.startDate) >= new Date(academicYear.endDate)) {
-        throw new BadRequestException('Start date must be before end date');
-      }
-    } else if (updateAcademicYearDto.endDate && !updateAcademicYearDto.startDate) {
-      if (new Date(updateAcademicYearDto.endDate) <= new Date(academicYear.startDate)) {
-        throw new BadRequestException('End date must be after start date');
-      }
+    // Determine the final date range for validation
+    const finalStartDate = updateAcademicYearDto.startDate
+      ? new Date(updateAcademicYearDto.startDate)
+      : new Date(academicYear.startDate);
+    const finalEndDate = updateAcademicYearDto.endDate
+      ? new Date(updateAcademicYearDto.endDate)
+      : new Date(academicYear.endDate);
+
+    // Validate that end date is after start date
+    if (finalEndDate <= finalStartDate) {
+      throw new BadRequestException('End date must be after start date');
     }
 
     // Check if name is being updated and if it already exists
@@ -93,6 +140,51 @@ export class AcademicYearsService {
 
       if (existingYear) {
         throw new ConflictException('Academic year with this name already exists');
+      }
+    }
+
+    // Check for date range overlaps if dates are being updated
+    if (updateAcademicYearDto.startDate || updateAcademicYearDto.endDate) {
+      const overlappingYears = await this.prisma.academicYear.findMany({
+        where: {
+          id: { not: id }, // Exclude current academic year
+          OR: [
+            // Updated year starts during an existing year
+            {
+              AND: [{ startDate: { lte: finalStartDate } }, { endDate: { gte: finalStartDate } }],
+            },
+            // Updated year ends during an existing year
+            {
+              AND: [{ startDate: { lte: finalEndDate } }, { endDate: { gte: finalEndDate } }],
+            },
+            // Updated year completely contains an existing year
+            {
+              AND: [{ startDate: { gte: finalStartDate } }, { endDate: { lte: finalEndDate } }],
+            },
+          ],
+        },
+      });
+
+      if (overlappingYears.length > 0) {
+        throw new ConflictException(
+          `Date range conflicts with existing academic year(s): ${overlappingYears.map(y => y.name).join(', ')}`,
+        );
+      }
+    }
+
+    // Check if trying to activate this year when another one is already active
+    if (updateAcademicYearDto.isActive === true && !academicYear.isActive) {
+      const activeYear = await this.prisma.academicYear.findFirst({
+        where: {
+          id: { not: id },
+          isActive: true,
+        },
+      });
+
+      if (activeYear) {
+        throw new ConflictException(
+          `Cannot activate academic year. Academic year "${activeYear.name}" is already active. Please deactivate it first.`,
+        );
       }
     }
 
